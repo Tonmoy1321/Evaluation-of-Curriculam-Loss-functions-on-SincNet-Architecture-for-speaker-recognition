@@ -55,6 +55,10 @@ copy_folder(in_folder,out_folder)
 for i in range(len(list_sig)): 
  
  # Open the wav file
+ ######################################################
+ print(list_sig[i])
+ list_sig[i] = str(list_sig[i]).replace('.wav', '.wav.wav')
+ ######################################################
  wav_file=in_folder+'/'+list_sig[i]
  [signal, fs] = sf.read(wav_file)
  signal=signal.astype(np.float64)
