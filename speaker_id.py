@@ -25,6 +25,7 @@ from dnn_models import MLP,flip
 from dnn_models import SincNet as CNN 
 from data_io import ReadList,read_conf,str_to_bool
 
+from tqdm import tqdm
 
 def create_batches_rnd(batch_size,data_folder,wav_lst,N_snt,wlen,lab_dict,fact_amp):
     
@@ -42,6 +43,11 @@ def create_batches_rnd(batch_size,data_folder,wav_lst,N_snt,wlen,lab_dict,fact_a
   #[fs,signal]=scipy.io.wavfile.read(data_folder+wav_lst[snt_id_arr[i]])
   #signal=signal.astype(float)/32768
 
+  wav_lst[snt_id_arr[i]] = str(wav_lst[snt_id_arr[i]]).upper().replace('.WAV.WAV', '.WAV.wav')
+  # wav_lst[snt_id_arr[i]] = wav_lst[snt_id_arr[i]].replace('.WAV', '.WAV.wav')
+  
+  # print('Loaded Name: ',wav_lst[snt_id_arr[i]].replace('.WAV', '.WAV.wav'))
+
   [signal, fs] = sf.read(data_folder+wav_lst[snt_id_arr[i]])
 
   # accesing to a random chunk
@@ -55,6 +61,9 @@ def create_batches_rnd(batch_size,data_folder,wav_lst,N_snt,wlen,lab_dict,fact_a
     signal = signal[:,0]
   
   sig_batch[i,:]=signal[snt_beg:snt_end]*rand_amp_arr[i]
+  
+  wav_lst[snt_id_arr[i]] = str(wav_lst[snt_id_arr[i]]).lower().replace('.wav.wav', '.wav')
+  # print(i, wav_lst[snt_id_arr[i]])
   lab_batch[i]=lab_dict[wav_lst[snt_id_arr[i]]]
   
  inp=Variable(torch.from_numpy(sig_batch).float().cuda().contiguous())
@@ -216,7 +225,6 @@ optimizer_DNN1 = optim.RMSprop(DNN1_net.parameters(), lr=lr,alpha=0.95, eps=1e-8
 optimizer_DNN2 = optim.RMSprop(DNN2_net.parameters(), lr=lr,alpha=0.95, eps=1e-8) 
 
 
-
 for epoch in range(N_epochs):
   
   test_flag=0
@@ -227,7 +235,7 @@ for epoch in range(N_epochs):
   loss_sum=0
   err_sum=0
 
-  for i in range(N_batches):
+  for i in tqdm(range(N_batches)):
 
     [inp,lab]=create_batches_rnd(batch_size,data_folder,wav_lst_tr,snt_tr,wlen,lab_dict,0.2)
     pout=DNN2_net(DNN1_net(CNN_net(inp)))
@@ -269,14 +277,20 @@ for epoch in range(N_epochs):
    err_sum_snt=0
    
    with torch.no_grad():  
-    for i in range(snt_te):
+    for i in tqdm(range(snt_te)):
        
      #[fs,signal]=scipy.io.wavfile.read(data_folder+wav_lst_te[i])
      #signal=signal.astype(float)/32768
 
+     wav_lst_te[i] = str(wav_lst_te[i]).upper().replace('.WAV', '.WAV.wav')
+
+    #  print('Final Audio Loc: ', wav_lst_te[i])
+
      [signal, fs] = sf.read(data_folder+wav_lst_te[i])
 
      signal=torch.from_numpy(signal).float().cuda().contiguous()
+     wav_lst_te[i] = str(wav_lst_te[i]).lower().replace('.wav.wav', '.wav')
+    #  print('Error here',wav_lst_te[i])
      lab_batch=lab_dict[wav_lst_te[i]]
     
      # split signals into chunks
